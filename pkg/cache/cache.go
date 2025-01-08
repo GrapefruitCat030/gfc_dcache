@@ -2,6 +2,10 @@ package cache
 
 import "log"
 
+const (
+	CacheTypeMemory = "memory"
+)
+
 type Cache interface {
 	Set(key string, value []byte) error
 	Get(key string) ([]byte, error)
@@ -14,7 +18,7 @@ var globalCache Cache
 func InitCache(name string) {
 	var c Cache
 	switch name {
-	case "memory":
+	case CacheTypeMemory:
 		c = newMCache()
 	default:
 		log.Panicln("unknown cache:", name)

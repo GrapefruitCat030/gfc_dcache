@@ -1,1 +1,3 @@
 gfc_dcache
+tools/selfserver-cli/selfserver-cli
+tools/cache-benchmark/cache-benchmark

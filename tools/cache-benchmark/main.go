@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GrapefruitCat030/gfc_dcache/cache-benchmark/client"
+	"github.com/GrapefruitCat030/gfc_dcache/tools/cache-benchmark/client"
 )
 
 type statistic struct {

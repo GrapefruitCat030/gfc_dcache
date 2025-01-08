@@ -3,12 +3,16 @@ package main
 import (
 	"log"
 
-	"github.com/GrapefruitCat030/gfc_dcache/pkg/server"
+	"github.com/GrapefruitCat030/gfc_dcache/pkg/cache"
+	"github.com/GrapefruitCat030/gfc_dcache/server"
+	"github.com/GrapefruitCat030/gfc_dcache/server/selfserver"
 )
 
 func main() {
-	server.InitServer("memory")
-	if err := server.StartServer(); err != nil {
+	if err := server.Run(
+		&selfserver.SelfServer{},
+		cache.CacheTypeMemory,
+	); err != nil {
 		log.Println(err)
 	}
 }

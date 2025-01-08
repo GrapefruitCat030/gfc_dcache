@@ -62,7 +62,7 @@ func (c *httpClient) Run(cmd *Cmd) {
 
 func newHTTPClient(server string) *httpClient {
 	client := &http.Client{Transport: &http.Transport{MaxIdleConnsPerHost: 1}}
-	return &httpClient{client, "http://" + server + ":12345/cache/"}
+	return &httpClient{client, "http://" + server + ":8080/cache/"}
 }
 
 func (c *httpClient) PipelinedRun([]*Cmd) {

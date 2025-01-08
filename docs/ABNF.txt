@@ -1,0 +1,9 @@
+command = op key | key-value
+op = 'SET' | 'GET' | 'DEL'
+key = bytes-array
+bytes-array = length SP content
+length = 1*DIGIT
+content = *OCTET
+key-value = length SP length SP content SP content
+response = error | bytes-array
+error = '-' bytes-array
