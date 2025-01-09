@@ -3,7 +3,8 @@ package cache
 import "log"
 
 const (
-	CacheTypeMemory = "memory"
+	CacheTypeMemory  = "memory"
+	CacheTypeLevelDB = "leveldb"
 )
 
 type Cache interface {
@@ -20,6 +21,8 @@ func InitCache(name string) {
 	switch name {
 	case CacheTypeMemory:
 		c = newMCache()
+	case CacheTypeLevelDB:
+		c = newLevelDBCache()
 	default:
 		log.Panicln("unknown cache:", name)
 	}
