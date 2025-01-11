@@ -1,22 +1,19 @@
 package cache
 
-import "github.com/syndtr/goleveldb/leveldb"
+import (
+	"github.com/syndtr/goleveldb/leveldb"
+)
 
 const (
 	levelDBCachePath = "/tmp/leveldb"
 )
 
 type LevelDBCache struct {
-	db     *leveldb.DB
-	status Stat
+	db *leveldb.DB
 }
 
 func (lc *LevelDBCache) Set(key string, value []byte) error {
-	if err := lc.db.Put([]byte(key), value, nil); err != nil {
-		return err
-	}
-	lc.status.add(key, value)
-	return nil
+	return lc.db.Put([]byte(key), value, nil)
 }
 
 func (lc *LevelDBCache) Get(key string) ([]byte, error) {
@@ -24,15 +21,17 @@ func (lc *LevelDBCache) Get(key string) ([]byte, error) {
 }
 
 func (lc *LevelDBCache) Delete(key string) error {
-	if err := lc.db.Delete([]byte(key), nil); err != nil {
-		return err
-	}
-	lc.status.del(key, nil)
-	return nil
+	return lc.db.Delete([]byte(key), nil)
 }
 
 func (lc *LevelDBCache) GetStatus() Stat {
-	return lc.status
+	iter := lc.db.NewIterator(nil, nil)
+	defer iter.Release()
+	s := Stat{}
+	for iter.Next() {
+		s.add(string(iter.Key()), iter.Value())
+	}
+	return s
 }
 
 func newLevelDBCache() *LevelDBCache {
@@ -40,8 +39,5 @@ func newLevelDBCache() *LevelDBCache {
 	if err != nil {
 		panic(err)
 	}
-	return &LevelDBCache{
-		db:     db,
-		status: Stat{},
-	}
+	return &LevelDBCache{db: db}
 }
