@@ -5,11 +5,14 @@ go 1.23.1
 require (
 	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/gorilla/mux v1.8.1
+	github.com/spf13/cobra v1.8.1
 	github.com/syndtr/goleveldb v1.0.0
 )
 
 require (
 	github.com/golang/snappy v0.0.0-20180518054509-2e65f85255db // indirect
+	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/onsi/ginkgo v1.16.5 // indirect
 	github.com/onsi/gomega v1.36.2 // indirect
+	github.com/spf13/pflag v1.0.5 // indirect
 )

@@ -1,8 +1,5 @@
 package client
 
-type Kksk struct {
-}
-
 type Cmd struct {
 	Name  string
 	Key   string
