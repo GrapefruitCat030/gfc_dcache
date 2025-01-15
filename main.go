@@ -5,12 +5,12 @@ import (
 
 	"github.com/GrapefruitCat030/gfc_dcache/pkg/cache"
 	"github.com/GrapefruitCat030/gfc_dcache/server"
-	"github.com/GrapefruitCat030/gfc_dcache/server/restserver"
+	"github.com/GrapefruitCat030/gfc_dcache/server/selfserver"
 )
 
 func main() {
 	if err := server.Run(
-		&restserver.RESTserver{},
+		&selfserver.SelfServer{},
 		cache.CacheTypeMemory,
 	); err != nil {
 		log.Println(err)

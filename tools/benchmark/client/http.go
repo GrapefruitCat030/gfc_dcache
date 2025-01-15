@@ -25,13 +25,13 @@ func (cli *HttpClient) Do(operation *Operation) error {
 			return err
 		}
 	default:
-		panic("unknown operation name " + operation.Name)
+		return fmt.Errorf("unknown operation %s", operation.Name)
 	}
 	return nil
 }
 
 func (cli *HttpClient) PipelinedDo(operations []*Operation) error {
-	return nil
+	return fmt.Errorf("not implemented")
 }
 
 func newHttpClient(serverAddr string) *HttpClient {

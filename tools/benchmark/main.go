@@ -93,14 +93,14 @@ func worker(workID, reqNum int, ch chan *result.BenchmarkRes) {
 		}
 		// do or pipelineDo
 		op := &client.Operation{Name: opType, Key: key, Value: value}
-		if cfg.pipelineLen > 1 {
+		if cfg.pipelineLen <= 1 {
+			justDo(cli, op, res)
+		} else {
 			pipelineOps = append(pipelineOps, op)
 			if len(pipelineOps) == cfg.pipelineLen { // if the pipeline is full, do the pipelineDo
 				pipelineDo(cli, pipelineOps, res)
 				pipelineOps = pipelineOps[:0] // clear the pipeline
 			}
-		} else {
-			justDo(cli, op, res)
 		}
 	}
 	// 3. Send the result to the channel
@@ -115,11 +115,7 @@ func justDo(cli client.Client, op *client.Operation, res *result.BenchmarkRes) {
 		return
 	}
 	dur := time.Since(start)
-	if op.Name == client.OperationTypeGet && op.Value != originVal {
-		fmt.Printf("error: origin value: %s, get value: %s\n", originVal, op.Value)
-		return
-	}
-	if op.Name == client.OperationTypeGet && op.Value == "" {
+	if op.Name == client.OperationTypeGet && (op.Value == "" || op.Value != originVal) {
 		res.CollectTimeCost(dur, "miss")
 		return
 	}
@@ -127,7 +123,23 @@ func justDo(cli client.Client, op *client.Operation, res *result.BenchmarkRes) {
 }
 
 func pipelineDo(cli client.Client, ops []*client.Operation, res *result.BenchmarkRes) {
-	// TODO
+	originVals := make([]string, len(ops)) // if op is GET, the value will be updated
+	for i, op := range ops {
+		originVals[i] = op.Value
+	}
+	start := time.Now()
+	if err := cli.PipelinedDo(ops); err != nil {
+		fmt.Printf("error: %v\n", err)
+		return
+	}
+	dur := time.Since(start) / time.Duration(len(ops))
+	for i, op := range ops {
+		if op.Name == client.OperationTypeGet && (op.Value == "" || op.Value != originVals[i]) {
+			res.CollectTimeCost(dur, "miss")
+			continue
+		}
+		res.CollectTimeCost(dur, op.Name)
+	}
 }
 
 func outputResult(totalRes *result.BenchmarkRes, dur time.Duration) {

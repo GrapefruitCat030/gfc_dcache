@@ -26,7 +26,7 @@ func NewClient(serverType, serverAddr string) Client {
 	case ServerTypeRest:
 		return newHttpClient(serverAddr)
 	case ServerTypeTCP:
-		return nil
+		return newTCPClient(serverAddr)
 	default:
 		panic("unknown client type " + serverType)
 	}
