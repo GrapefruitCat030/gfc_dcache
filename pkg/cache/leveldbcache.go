@@ -71,7 +71,7 @@ func (lc *LevelDBCache) flushBatch() error {
 	return nil
 }
 
-func writeFunc(lc *LevelDBCache) {
+func (lc *LevelDBCache) writeFunc() {
 	t := time.NewTicker(1 * time.Second)
 	defer t.Stop()
 	for {
@@ -109,6 +109,6 @@ func newLevelDBCache() *LevelDBCache {
 		batchCh: make(chan *pair, 5000),
 		done:    make(chan struct{}),
 	}
-	go writeFunc(lc)
+	go lc.writeFunc()
 	return lc
 }

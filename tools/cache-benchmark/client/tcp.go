@@ -108,16 +108,28 @@ func (c *tcpClient) PipelinedRun(cmds []*Cmd) {
 			return
 		}
 	}
+	var dataBuf []byte
 	for _, cmd := range cmds {
-		resp, err := c.recvResponse()
-		if err != nil {
-			cmd.Error = err
-			return
-		}
-		if resp.IsError {
-			cmd.Error = errors.New(string(resp.Data))
-		} else {
-			cmd.Value = string(resp.Data)
+		for {
+			resp, used, err := protocol.DecodeResponseWithLeftover(dataBuf)
+			if err != nil {
+				// 如果解析不到完整包，继续Read
+				buf := make([]byte, 1024)
+				n, rerr := c.Read(buf)
+				if rerr != nil {
+					cmd.Error = rerr
+					return
+				}
+				dataBuf = append(dataBuf, buf[:n]...)
+				continue
+			}
+			dataBuf = dataBuf[used:]
+			if resp.IsError {
+				cmd.Error = errors.New(string(resp.Data))
+			} else {
+				cmd.Value = string(resp.Data)
+			}
+			break
 		}
 	}
 }

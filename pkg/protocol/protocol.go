@@ -115,3 +115,60 @@ func DecodeResponse(data []byte) (*Response, error) {
 	resp.Data = content
 	return resp, nil
 }
+
+func DecodeRequestWithLeftover(data []byte) (*Request, int, error) {
+	if len(data) == 0 {
+		return nil, 0, fmt.Errorf("no data")
+	}
+	origData := data
+	req := &Request{}
+	// 先解析操作类型
+	var matched bool
+	for _, op := range []OpType{SET, GET, DEL} {
+		if bytes.HasPrefix(data, []byte(op)) {
+			req.Op = op
+			data = bytes.TrimPrefix(data, []byte(op))
+			data = bytes.TrimLeft(data, " ")
+			matched = true
+			break
+		}
+	}
+	if !matched {
+		return nil, 0, fmt.Errorf("invalid op")
+	}
+	// 解析key
+	key, remaining, err := decodeBytesArray(data)
+	if err != nil {
+		return nil, 0, err
+	}
+	req.Key = key
+	data = remaining
+	// 如果还有数据，解析value
+	data = bytes.TrimLeft(data, " ")
+	if len(data) > 0 {
+		value, leftover, err := decodeBytesArray(data)
+		if err != nil {
+			return nil, 0, err
+		}
+		req.Value = value
+		data = leftover
+	}
+	used := len(origData) - len(data)
+	return req, used, nil
+}
+
+func DecodeResponseWithLeftover(data []byte) (*Response, int, error) {
+	origData := data
+	resp := &Response{}
+	if bytes.HasPrefix(data, []byte("-")) {
+		resp.IsError = true
+		data = bytes.TrimPrefix(data, []byte("-"))
+	}
+	content, leftover, err := decodeBytesArray(data)
+	if err != nil {
+		return nil, 0, err
+	}
+	resp.Data = content
+	used := len(origData) - len(leftover)
+	return resp, used, nil
+}

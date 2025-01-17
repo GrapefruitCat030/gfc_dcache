@@ -64,10 +64,12 @@ func (s *SelfServer) ShutdownServer() error {
 }
 
 func (s *SelfServer) handleConnection(conn net.Conn) {
-	defer conn.Close()
-	buf := make([]byte, 1024)
+	asyncProcessor := newConnProcessor(conn)
+	defer asyncProcessor.close()
+	readBuf := make([]byte, 1024*10)
+	var dataBuf []byte
 	for {
-		num, err := conn.Read(buf)
+		num, err := conn.Read(readBuf)
 		if err != nil {
 			if err.Error() == "EOF" {
 				log.Printf("connection closed\n")
@@ -76,17 +78,24 @@ func (s *SelfServer) handleConnection(conn net.Conn) {
 			log.Printf("connection read error: %v\n", err)
 			continue
 		}
-		req, err := protocol.DecodeRequest(buf[:num])
-		if err != nil {
-			resp := &protocol.Response{IsError: true, Data: []byte(err.Error())}
-			conn.Write(resp.Encode())
-			continue
+		dataBuf = append(dataBuf, readBuf[:num]...)
+		for {
+			req, used, err := protocol.DecodeRequestWithLeftover(dataBuf)
+			if err != nil {
+				// 无法完整解析时退出循环，等待更多数据
+				break
+			}
+			// 成功解析请求后，将已用字节剔除
+			dataBuf = dataBuf[used:]
+			s.handleRequest(asyncProcessor, req)
 		}
-		resp := s.handleRequest(req)
-		conn.Write(resp.Encode())
 	}
 }
 
-func (s *SelfServer) handleRequest(req *protocol.Request) *protocol.Response {
-	return s.router.Dispatch(req)
+func (s *SelfServer) handleRequest(ap *asyncProcessor, req *protocol.Request) {
+	ch := make(chan *protocol.Response)
+	ap.respChan <- ch
+	go func() {
+		ch <- s.router.Dispatch(req)
+	}()
 }
