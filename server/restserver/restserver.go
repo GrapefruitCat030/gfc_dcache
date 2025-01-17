@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/GrapefruitCat030/gfc_dcache/pkg/cache"
 	"github.com/GrapefruitCat030/gfc_dcache/server/restserver/api/route"
 )
 
@@ -24,5 +25,8 @@ func (s *RESTserver) StartServer() error {
 }
 
 func (s *RESTserver) ShutdownServer() error {
+	if err := cache.GlobalCache().Close(); err != nil {
+		return err
+	}
 	return s.Shutdown(context.TODO())
 }

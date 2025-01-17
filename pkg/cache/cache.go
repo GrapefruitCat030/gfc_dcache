@@ -12,6 +12,7 @@ type Cache interface {
 	Get(key string) ([]byte, error)
 	Delete(key string) error
 	GetStatus() Stat
+	Close() error
 }
 
 var globalCache Cache

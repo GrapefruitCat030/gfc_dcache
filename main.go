@@ -11,7 +11,7 @@ import (
 func main() {
 	if err := server.Run(
 		&selfserver.SelfServer{},
-		cache.CacheTypeMemory,
+		cache.CacheTypeLevelDB,
 	); err != nil {
 		log.Println(err)
 	}

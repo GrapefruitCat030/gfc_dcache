@@ -5,6 +5,7 @@ import (
 	"log"
 	"net"
 
+	"github.com/GrapefruitCat030/gfc_dcache/pkg/cache"
 	"github.com/GrapefruitCat030/gfc_dcache/pkg/protocol"
 	"github.com/GrapefruitCat030/gfc_dcache/server/selfserver/api/handler"
 	"github.com/GrapefruitCat030/gfc_dcache/server/selfserver/api/route"
@@ -55,6 +56,9 @@ func (s *SelfServer) ShutdownServer() error {
 	s.cancel()
 	if s.listener != nil {
 		return s.listener.Close()
+	}
+	if err := cache.GlobalCache().Close(); err != nil {
+		return err
 	}
 	return nil
 }

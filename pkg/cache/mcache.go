@@ -41,6 +41,12 @@ func (mc *MCache) GetStatus() Stat {
 	return mc.status
 }
 
+func (mc *MCache) Close() error {
+	mc.mtx.Lock()
+	defer mc.mtx.Unlock()
+	return nil
+}
+
 func newMCache() *MCache {
 	return &MCache{
 		mcache: make(map[string][]byte),
