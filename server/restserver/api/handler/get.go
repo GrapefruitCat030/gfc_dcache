@@ -21,3 +21,7 @@ func GetCacheHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Write(val)
 }
+
+func GetClusterHandler(w http.ResponseWriter, r *http.Request) {
+	return // TODO
+}

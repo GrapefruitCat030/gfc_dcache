@@ -13,5 +13,6 @@ func NewRouter() *mux.Router {
 	r.HandleFunc("/cache/{key}", handler.GetCacheHandler).Methods(http.MethodGet)
 	r.HandleFunc("/cache/{key}", handler.SetCacheHandler).Methods(http.MethodPut)
 	r.HandleFunc("/cache/{key}", handler.DelCacheHandler).Methods(http.MethodDelete)
+	r.HandleFunc("/cluster", handler.GetClusterHandler).Methods(http.MethodGet)
 	return r
 }

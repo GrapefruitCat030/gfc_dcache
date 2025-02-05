@@ -1,3 +1,5 @@
+This ABNF describes the definition of self protocol upper TCP.
+
 command = op key | key-value
 op = 'SET' | 'GET' | 'DEL'
 key = bytes-array
