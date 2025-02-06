@@ -1,6 +1,7 @@
 package route
 
 import (
+	"github.com/GrapefruitCat030/gfc_dcache/pkg/cluster"
 	"github.com/GrapefruitCat030/gfc_dcache/pkg/protocol"
 )
 
@@ -26,6 +27,10 @@ func (r *Router) Register(op protocol.OpType, handler HandlerFunc) {
 
 // Dispatch 分发请求到对应的处理器
 func (r *Router) Dispatch(req *protocol.Request) *protocol.Response {
+	// 判断当前节点是否负责处理该请求
+	if addr, ok := cluster.GlobalNode().ShouldProcess(string(req.Key)); !ok {
+		return &protocol.Response{IsError: true, Data: []byte("redirect to " + addr)}
+	}
 	if handler, ok := r.handlers[req.Op]; ok {
 		return handler(req)
 	}
