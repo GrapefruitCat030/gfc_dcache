@@ -2,10 +2,10 @@ package selfserver
 
 import (
 	"context"
+	"errors"
 	"log"
 	"net"
 
-	"github.com/GrapefruitCat030/gfc_dcache/pkg/cache"
 	"github.com/GrapefruitCat030/gfc_dcache/pkg/protocol"
 	"github.com/GrapefruitCat030/gfc_dcache/server/selfserver/api/handler"
 	"github.com/GrapefruitCat030/gfc_dcache/server/selfserver/api/route"
@@ -21,7 +21,7 @@ type SelfServer struct {
 
 func (s *SelfServer) InitServer() {
 	ctx, cancel := context.WithCancel(context.Background())
-	s.addr = ":8080"
+	s.addr = ":8081"
 	s.ctx = ctx
 	s.cancel = cancel
 
@@ -44,6 +44,10 @@ func (s *SelfServer) StartServer() error {
 		default:
 			conn, err := s.listener.Accept()
 			if err != nil {
+				if errors.Is(err, net.ErrClosed) {
+					log.Printf("tcp: listener closed")
+					return nil
+				}
 				log.Printf("accept error: %v\n", err)
 				continue
 			}
@@ -56,9 +60,6 @@ func (s *SelfServer) ShutdownServer() error {
 	s.cancel()
 	if s.listener != nil {
 		return s.listener.Close()
-	}
-	if err := cache.GlobalCache().Close(); err != nil {
-		return err
 	}
 	return nil
 }

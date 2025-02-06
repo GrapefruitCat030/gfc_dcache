@@ -31,6 +31,10 @@ func InitCache(name string) {
 	globalCache = c
 }
 
+func ShotdownCache() error {
+	return globalCache.Close()
+}
+
 func GlobalCache() Cache {
 	return globalCache
 }

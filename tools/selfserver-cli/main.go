@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	client := protocol.NewClient("localhost:8080", 5*time.Second)
+	client := protocol.NewClient("localhost:8081", 5*time.Second)
 	defer client.Close()
 
 	// SET 操作

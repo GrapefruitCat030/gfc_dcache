@@ -3,6 +3,7 @@ package cluster
 import (
 	"errors"
 	"io"
+	"log"
 	"time"
 
 	"github.com/hashicorp/memberlist"
@@ -35,9 +36,9 @@ func (gnd *gossipNode) NodeAddr() string {
 	return gnd.addr
 }
 
-// New creates a new gossip node in the cluster.
+// newGossipNode creates a new gossip node in the cluster.
 // addr is the address of the node, and cluster is the address of the cluster.
-func New(addr, cluster string) (Node, error) {
+func newGossipNode(addr, cluster string) (Node, error) {
 	if addr == "" {
 		return nil, errors.New("addr is empty")
 	}
@@ -74,4 +75,19 @@ func New(addr, cluster string) (Node, error) {
 	}()
 
 	return &gossipNode{hashRing: hashRing, addr: addr}, nil
+}
+
+var globalNode Node
+
+func InitNode(addr, cluster string) {
+	node, err := newGossipNode(addr, cluster)
+	if err != nil {
+		panic(err)
+	}
+	globalNode = node
+	log.Println("node:", addr, " is created")
+}
+
+func GlobalNode() Node {
+	return globalNode
 }
