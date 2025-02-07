@@ -13,6 +13,7 @@ type Cache interface {
 	Delete(key string) error
 	GetStatus() Stat
 	Close() error
+	NewScanner() Scanner
 }
 
 var globalCache Cache

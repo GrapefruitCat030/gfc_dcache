@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/syndtr/goleveldb/leveldb"
+	"github.com/syndtr/goleveldb/leveldb/iterator"
 )
 
 const (
@@ -56,6 +57,11 @@ func (lc *LevelDBCache) Close() error {
 	close(lc.done)
 	time.Sleep(1 * time.Second)
 	return lc.db.Close()
+}
+
+func (lc *LevelDBCache) NewScanner() Scanner {
+	iter := lc.db.NewIterator(nil, nil)
+	return &LevelDBCacheScanner{iter: iter}
 }
 
 func (lc *LevelDBCache) flushBatch() error {
@@ -111,4 +117,25 @@ func newLevelDBCache() *LevelDBCache {
 	}
 	go lc.writeFunc()
 	return lc
+}
+
+// LevelDBCacheScanner is the scanner for LevelDBCache
+type LevelDBCacheScanner struct {
+	iter iterator.Iterator
+}
+
+func (lcs *LevelDBCacheScanner) Scan() bool {
+	return lcs.iter.Next()
+}
+
+func (lcs *LevelDBCacheScanner) Key() string {
+	return string(lcs.iter.Key())
+}
+
+func (lcs *LevelDBCacheScanner) Value() []byte {
+	return lcs.iter.Value()
+}
+
+func (lcs *LevelDBCacheScanner) Close() {
+	lcs.iter.Release()
 }
