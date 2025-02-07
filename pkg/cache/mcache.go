@@ -2,21 +2,23 @@ package cache
 
 import (
 	"sync"
+	"time"
 )
 
 type MCache struct {
-	mcache map[string][]byte
+	mcache map[string]cacheValue
 	status Stat
 	mtx    sync.RWMutex
+	ttl    time.Duration
 }
 
 func (mc *MCache) Set(key string, value []byte) error {
 	mc.mtx.Lock()
 	defer mc.mtx.Unlock()
 	if tmp, ok := mc.mcache[key]; ok {
-		mc.status.del(key, tmp)
+		mc.status.del(key, tmp.Value)
 	}
-	mc.mcache[key] = value
+	mc.mcache[key] = cacheValue{Value: value, ExpireAt: time.Now().Add(mc.ttl)}
 	mc.status.add(key, value)
 	return nil
 }
@@ -24,14 +26,14 @@ func (mc *MCache) Set(key string, value []byte) error {
 func (mc *MCache) Get(key string) ([]byte, error) {
 	mc.mtx.RLock() // use RLock to allow multiple readers
 	defer mc.mtx.RUnlock()
-	return mc.mcache[key], nil
+	return mc.mcache[key].Value, nil
 }
 
 func (mc *MCache) Delete(key string) error {
 	mc.mtx.Lock()
 	defer mc.mtx.Unlock()
 	if _, ok := mc.mcache[key]; ok {
-		mc.status.del(key, mc.mcache[key])
+		mc.status.del(key, mc.mcache[key].Value)
 		delete(mc.mcache, key)
 	}
 	return nil
@@ -45,6 +47,20 @@ func (mc *MCache) Close() error {
 	mc.mtx.Lock()
 	defer mc.mtx.Unlock()
 	return nil
+}
+
+func (mc *MCache) expirer() {
+	for {
+		time.Sleep(mc.ttl)
+		mc.mtx.Lock()
+		for k, v := range mc.mcache {
+			if v.ExpireAt.Before(time.Now()) {
+				mc.status.del(k, v.Value)
+				delete(mc.mcache, k)
+			}
+		}
+		mc.mtx.Unlock()
+	}
 }
 
 func (mc *MCache) NewScanner() Scanner {
@@ -61,12 +77,17 @@ func (mc *MCache) NewScanner() Scanner {
 	}
 }
 
-func newMCache() *MCache {
-	return &MCache{
-		mcache: make(map[string][]byte),
+func newMCache(ttl int) *MCache {
+	c := &MCache{
+		mcache: make(map[string]cacheValue),
 		status: Stat{},
 		mtx:    sync.RWMutex{},
+		ttl:    time.Duration(ttl) * time.Second,
 	}
+	if ttl > 0 {
+		go c.expirer()
+	}
+	return c
 }
 
 type MCacheScanner struct {
@@ -98,7 +119,7 @@ func (mcs *MCacheScanner) Value() []byte {
 	if mcs.idx < 0 || mcs.idx >= len(mcs.keys) {
 		return nil
 	}
-	return mcs.cache.mcache[mcs.keys[mcs.idx]]
+	return mcs.cache.mcache[mcs.keys[mcs.idx]].Value
 }
 
 func (mcs *MCacheScanner) Close() {

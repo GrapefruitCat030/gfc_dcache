@@ -18,8 +18,8 @@ type Server interface {
 	ShutdownServer() error
 }
 
-func Run(cacheType, nodeAddr, clusterAddr string) error {
-	cache.InitCache(cacheType)
+func Run(cacheTtl int, cacheType, nodeAddr, clusterAddr string) error {
+	cache.InitCache(cacheType, cacheTtl)
 	cluster.InitNode(nodeAddr, clusterAddr)
 	// start TCP + HTTP server
 	servers := []Server{

@@ -18,13 +18,13 @@ type Cache interface {
 
 var globalCache Cache
 
-func InitCache(name string) {
+func InitCache(name string, ttl int) {
 	var c Cache
 	switch name {
 	case CacheTypeMemory:
-		c = newMCache()
+		c = newMCache(ttl)
 	case CacheTypeLevelDB:
-		c = newLevelDBCache()
+		c = newLevelDBCache(ttl)
 	default:
 		log.Panicln("unknown cache:", name)
 	}

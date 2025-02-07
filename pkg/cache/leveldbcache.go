@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"encoding/json"
 	"fmt"
 	"sync"
 	"time"
@@ -22,21 +23,47 @@ type pair struct {
 	value []byte
 }
 
+type cacheValue struct {
+	Value    []byte    `json:"value"`
+	ExpireAt time.Time `json:"expireAt"`
+}
+
 type LevelDBCache struct {
 	db         *leveldb.DB
 	batch      *leveldb.Batch
 	batchCh    chan *pair
 	batchMutex sync.Mutex
+	ttl        time.Duration
 	done       chan struct{}
 }
 
 func (lc *LevelDBCache) Set(key string, value []byte) error {
-	lc.batchCh <- &pair{key: key, value: value}
+	cacheVal := cacheValue{Value: value, ExpireAt: time.Now().Add(lc.ttl)}
+	encodeVal, err := json.Marshal(cacheVal)
+	if err != nil {
+		return err
+	}
+	lc.batchCh <- &pair{key: key, value: encodeVal}
 	return nil
 }
 
 func (lc *LevelDBCache) Get(key string) ([]byte, error) {
-	return lc.db.Get([]byte(key), nil)
+	encodeVal, err := lc.db.Get([]byte(key), nil)
+	if err == leveldb.ErrNotFound {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	var cacheVal cacheValue
+	if err := json.Unmarshal(encodeVal, &cacheVal); err != nil {
+		return nil, err
+	}
+	if time.Now().After(cacheVal.ExpireAt) {
+		lc.Delete(key)
+		return nil, fmt.Errorf("key %s is expired", key)
+	}
+	return cacheVal.Value, nil
 }
 
 func (lc *LevelDBCache) Delete(key string) error {
@@ -48,7 +75,15 @@ func (lc *LevelDBCache) GetStatus() Stat {
 	defer iter.Release()
 	s := Stat{}
 	for iter.Next() {
-		s.add(string(iter.Key()), iter.Value())
+		var cacheVal cacheValue
+		if err := json.Unmarshal(iter.Value(), &cacheVal); err != nil {
+			continue
+		}
+		if time.Now().After(cacheVal.ExpireAt) {
+			lc.Delete(string(iter.Key()))
+			continue
+		}
+		s.add(string(iter.Key()), cacheVal.Value)
 	}
 	return s
 }
@@ -104,7 +139,7 @@ func (lc *LevelDBCache) writeFunc() {
 	}
 }
 
-func newLevelDBCache() *LevelDBCache {
+func newLevelDBCache(ttl int) *LevelDBCache {
 	db, err := leveldb.OpenFile(levelDBCachePath, nil)
 	if err != nil {
 		panic(err)
@@ -114,6 +149,7 @@ func newLevelDBCache() *LevelDBCache {
 		batch:   new(leveldb.Batch),
 		batchCh: make(chan *pair, 5000),
 		done:    make(chan struct{}),
+		ttl:     time.Duration(ttl) * time.Second,
 	}
 	go lc.writeFunc()
 	return lc
